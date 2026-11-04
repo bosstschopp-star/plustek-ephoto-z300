@@ -1,0 +1,6 @@
+# Plustek ePhoto Z300 (internal codename "M21") — user access for reverse
+# engineering / driver development.
+#
+# TAG+="uaccess" grants access to the user logged in at the local seat (the
+# modern mechanism); MODE/GROUP is the fallback for systems still using plugdev.
+SUBSYSTEM=="usb", ATTR{idVendor}=="07b3", ATTR{idProduct}=="143d", MODE="0664", GROUP="plugdev", TAG+="uaccess", ENV{libsane_matched}="yes"

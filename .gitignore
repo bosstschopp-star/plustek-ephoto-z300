@@ -1,0 +1,24 @@
+# Build
+sane/libsane-ephoto.so*
+sane/enhance_test
+*.o
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Herstellermaterial und Mitschnitte gehören nicht ins Repository
+vendor/
+captures/
+*.pcap
+*.pcapng
+
+# Scans
+*.png
+*.jpg
+*.jpeg
+*.tif
+*.tiff
+*.pdf
+*.bin
