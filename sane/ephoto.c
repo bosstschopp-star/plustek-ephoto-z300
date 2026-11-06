@@ -371,8 +371,8 @@ fail:
  * Den Hintergrund liefern die ersten bzw. letzten Zeilen (Blatt noch nicht /
  * nicht mehr unter der Scanzeile).  Die Kante beginnt, wo die Zeile merklich
  * darueber liegt.  Geschnitten wird wie bisher in der Mitte des Uebergangs
- * (etwa acht Zeilen bei 300 dpi), gemessen an der Helligkeit dahinter — bei
- * weissem Papier also bei halber Papierhelligkeit, damit A4 exakt 297 mm
+ * (je nach Vorlage etwa 8 bis 30 Zeilen bei 300 dpi), gemessen an der
+ * Helligkeit dahinter — bei weissem Papier also bei halber Papierhelligkeit, damit A4 exakt 297 mm
  * bleibt; bei einem dunklen Foto kurz hinter dem Hintergrund.
  * Sieht der Vor-/Nachlauf nicht nach Hintergrund aus, wird nichts
  * abgeschnitten. */
@@ -395,10 +395,14 @@ static int edge_from(const double *rowmean, int lines, int dir, int dpi)
   while (e < lines && ROW(e) <= thr) e++;
   if (e >= lines) return start;                 /* leerer Scan */
 
-  /* Helligkeit hinter dem Uebergang: Median des Fensters ab der Kante */
+  /* Helligkeit hinter dem Uebergang: Median von [e + 2 win, e + 4 win).
+   * Direkt ab der Kante laege das Fenster noch in der Rampe (gemessen bis
+   * ~30 Zeilen bei 300 dpi), der Schnitt fiele zu frueh und liesse einen
+   * dunklen Streifen stehen.  Am Bildende ersatzweise ab der Kante. */
   double w[64];
   int n = 0;
-  for (int k = e; k < e + win && k < lines && n < 64; k++) w[n++] = ROW(k);
+  for (int k = e + 2 * win; k < e + 4 * win && k < lines && n < 64; k++) w[n++] = ROW(k);
+  for (int k = e; n == 0 && k < e + win && k < lines; k++) w[n++] = ROW(k);
   for (int i = 1; i < n; i++)
     for (int j = i; j > 0 && w[j - 1] > w[j]; j--) { double t = w[j]; w[j] = w[j - 1]; w[j - 1] = t; }
   double mid = bg + 0.5 * (w[n / 2] - bg);

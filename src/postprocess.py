@@ -102,7 +102,11 @@ def _sheet_edge(rows, win, fraction):
     if not len(above):
         return 0
     e = above[0]
-    mid = bg + fraction * (np.median(rows[e:e + win]) - bg)
+    # Helligkeit hinter dem Übergang, nicht in der Rampe selbst (bis ~30 Zeilen)
+    behind = rows[e + 2 * win:e + 4 * win]
+    if not len(behind):
+        behind = rows[e:e + win]
+    mid = bg + fraction * (np.median(behind) - bg)
     past = np.where(rows[e:] > mid)[0]
     return int(e + past[0]) if len(past) else 0
 
@@ -114,12 +118,12 @@ def trim_dark(img, fraction=0.5):
     Zeile: ein randloser, dunkler Abzug hat keine helle Papierkante, sonst
     fielen dunkle Bildzeilen mit weg.  Geschnitten wird bei `fraction` des
     Übergangs zur Helligkeit dahinter — bei weissem Papier die Mitte des
-    Übergangs, der nur etwa acht Zeilen dauert.  Ein fester Zusatzbeschnitt
-    ist nicht nötig und schneidet sonst Bildinhalt weg: so getrimmt ergibt
-    eine A4-Seite exakt 297 mm.  Gleiches Verfahren wie sane/ephoto.c.
+    Übergangs, der je nach Vorlage etwa 8 bis 30 Zeilen dauert.  Ein fester
+    Zusatzbeschnitt ist nicht nötig und schneidet sonst Bildinhalt weg: so
+    getrimmt ergibt eine A4-Seite exakt 297 mm.  Gleiches Verfahren wie sane/ephoto.c.
     """
     rows = img.mean(axis=(1, 2))
-    win = 16 * img.shape[1] // 2550             # Übergang ~8 Zeilen bei 300 dpi
+    win = 16 * img.shape[1] // 2550             # 16 Zeilen bei 300 dpi
     a = _sheet_edge(rows, win, fraction)
     b = len(rows) - _sheet_edge(rows[::-1], win, fraction)
     if b <= a:
