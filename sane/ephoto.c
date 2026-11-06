@@ -365,6 +365,48 @@ fail:
   return -1;
 }
 
+/* Erste Zeile des Blatts vom Anfang (dir = +1) bzw. Ende (dir = -1) her.
+ *
+ * Den Hintergrund liefern die ersten bzw. letzten Zeilen (Blatt noch nicht /
+ * nicht mehr unter der Scanzeile).  Die Kante beginnt, wo die Zeile merklich
+ * darueber liegt.  Geschnitten wird wie bisher in der Mitte des Uebergangs
+ * (etwa acht Zeilen bei 300 dpi), gemessen an der Helligkeit dahinter — bei
+ * weissem Papier also bei halber Papierhelligkeit, damit A4 exakt 297 mm
+ * bleibt; bei einem dunklen Foto kurz hinter dem Hintergrund.
+ * Sieht der Vor-/Nachlauf nicht nach Hintergrund aus, wird nichts
+ * abgeschnitten. */
+static int edge_from(const double *rowmean, int lines, int dir, int dpi)
+{
+  const int nb = 16, win = 16 * dpi / 300;
+  int start = dir > 0 ? 0 : lines - 1;
+  if (lines < 4 * nb) return start;
+#define ROW(k) rowmean[start + dir * (k)]
+  double bg = 0, var = 0;
+  for (int k = 0; k < nb; k++) bg += ROW(k);
+  bg /= nb;
+  for (int k = 0; k < nb; k++) var += (ROW(k) - bg) * (ROW(k) - bg);
+  double sd = sqrt(var / nb);
+  /* Hintergrund ist dunkel und gleichmaessig; sonst lag das Blatt schon an */
+  if (bg > 10 || sd > 0.5) return start;
+
+  double thr = bg + fmax(0.15, 8 * sd);
+  int e = 0;
+  while (e < lines && ROW(e) <= thr) e++;
+  if (e >= lines) return start;                 /* leerer Scan */
+
+  /* Helligkeit hinter dem Uebergang: Median des Fensters ab der Kante */
+  double w[64];
+  int n = 0;
+  for (int k = e; k < e + win && k < lines && n < 64; k++) w[n++] = ROW(k);
+  for (int i = 1; i < n; i++)
+    for (int j = i; j > 0 && w[j - 1] > w[j]; j--) { double t = w[j]; w[j] = w[j - 1]; w[j - 1] = t; }
+  double mid = bg + 0.5 * (w[n / 2] - bg);
+  while (e < lines && ROW(e) <= mid) e++;
+#undef ROW
+  if (e >= lines) return start;
+  return start + dir * e;
+}
+
 /* Segmentluecken fuellen, Farbzeilen ausrichten, spiegeln, Rand abschneiden. */
 static SANE_Byte *postprocess(unsigned char *raw, size_t len, int *out_lines)
 {
@@ -394,20 +436,18 @@ static SANE_Byte *postprocess(unsigned char *raw, size_t len, int *out_lines)
   /* Zeilenhelligkeit fuer den Beschnitt */
   double *rowmean = calloc(lines, sizeof(double));
   if (!rowmean) return NULL;
-  double maxrow = 0;
   for (int y = 0; y < lines; y++) {
     const unsigned char *r = raw + (size_t)y * S;
     long s = 0;
     for (int i = 0; i < S; i += 7) s += r[i];
     rowmean[y] = (double)s / (S / 7);
-    if (rowmean[y] > maxrow) maxrow = rowmean[y];
   }
-  /* Schwelle bei halber Papierhelligkeit: der Kantenuebergang dauert nur
-   * etwa acht Zeilen, ein fester Zusatzbeschnitt wuerde Bildinhalt kosten */
-  double thr = maxrow * 0.5;
-  int y0 = 0, y1 = lines - 1;
-  while (y0 < lines && rowmean[y0] <= thr) y0++;
-  while (y1 > y0 && rowmean[y1] <= thr) y1--;
+  /* Nicht relativ zur hellsten Zeile schneiden: ein randloser, dunkler Abzug
+   * hat keine helle Papierkante, dann fielen dunkle Bildzeilen mit weg.
+   * Stattdessen gegen den Scannerhintergrund (Vor-/Nachlauf, roh ~2,5 bei
+   * Zeilenstreuung ~0,02; dunkelste Bildzeilen gemessen 3,1). */
+  int y0 = edge_from(rowmean, lines, +1, mode->dpi);
+  int y1 = edge_from(rowmean, lines, -1, mode->dpi);
   free(rowmean);
 
   y0 += mode->ch_off; y1 -= mode->ch_off;
@@ -598,6 +638,19 @@ SANE_Status sane_start(SANE_Handle h)
   unsigned char *raw = NULL;
   size_t raw_len = 0;
   if (run_sequence(&raw, &raw_len) < 0) return SANE_STATUS_IO_ERROR;
+
+  /* Diagnose: ungetrimmte Rohdaten als PPM ablegen (EPHOTO_DUMP_RAW=Pfad).
+   * Spalten ungespiegelt, Farbzeilen nicht ausgerichtet. */
+  {
+    const char *dump = getenv("EPHOTO_DUMP_RAW");
+    FILE *f = dump && *dump ? fopen(dump, "wb") : NULL;
+    if (f) {
+      int n = (int)(raw_len / mode->stride);
+      fprintf(f, "P6\n%d %d\n255\n", mode->pixels, n);
+      fwrite(raw, mode->stride, n, f);
+      fclose(f);
+    }
+  }
 
   free(image);
   image = postprocess(raw, raw_len, &img_lines);

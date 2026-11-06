@@ -90,20 +90,41 @@ def orient(img):
     return img[:, ::-1].copy()
 
 
+def _sheet_edge(rows, win, fraction):
+    """Index der ersten Blattzeile in `rows` (vom Anfang her) oder 0."""
+    nb = 16
+    if len(rows) < 4 * nb:
+        return 0
+    bg, sd = rows[:nb].mean(), rows[:nb].std()
+    if bg > 10 or sd > 0.5:          # kein Vorlauf: Blatt lag schon an
+        return 0
+    above = np.where(rows > bg + max(0.15, 8 * sd))[0]
+    if not len(above):
+        return 0
+    e = above[0]
+    mid = bg + fraction * (np.median(rows[e:e + win]) - bg)
+    past = np.where(rows[e:] > mid)[0]
+    return int(e + past[0]) if len(past) else 0
+
+
 def trim_dark(img, fraction=0.5):
     """Dunklen Vor- und Nachlauf abschneiden (Blatt noch nicht / nicht mehr da).
 
-    Die Schwelle liegt bei `fraction` der Papierhelligkeit, damit der Schnitt in
-    die Mitte des Übergangs fällt — dieser dauert nur etwa acht Zeilen.  Ein
-    fester Zusatzbeschnitt ist nicht nötig und schneidet sonst Bildinhalt weg:
-    so getrimmt ergibt eine A4-Seite exakt 297 mm.
+    Bezug ist der Scannerhintergrund aus Vor- und Nachlauf, nicht die hellste
+    Zeile: ein randloser, dunkler Abzug hat keine helle Papierkante, sonst
+    fielen dunkle Bildzeilen mit weg.  Geschnitten wird bei `fraction` des
+    Übergangs zur Helligkeit dahinter — bei weissem Papier die Mitte des
+    Übergangs, der nur etwa acht Zeilen dauert.  Ein fester Zusatzbeschnitt
+    ist nicht nötig und schneidet sonst Bildinhalt weg: so getrimmt ergibt
+    eine A4-Seite exakt 297 mm.  Gleiches Verfahren wie sane/ephoto.c.
     """
     rows = img.mean(axis=(1, 2))
-    paper = np.median(rows[rows > rows.max() * 0.5]) if rows.max() else 0
-    bright = np.where(rows > paper * fraction)[0]
-    if not len(bright):
+    win = 16 * img.shape[1] // 2550             # Übergang ~8 Zeilen bei 300 dpi
+    a = _sheet_edge(rows, win, fraction)
+    b = len(rows) - _sheet_edge(rows[::-1], win, fraction)
+    if b <= a:
         return img, 0, len(img)
-    return img[bright[0]:bright[-1] + 1], int(bright[0]), int(bright[-1] + 1)
+    return img[a:b], a, b
 
 
 def main():
