@@ -293,12 +293,11 @@ class Window(Adw.ApplicationWindow):
         page.add(g)
 
         g = Adw.PreferencesGroup(title=_("Photo restoration"))
-        self._switch(g, _("Fix staircase artifacts"), "dejitter", _("scanner line offset"))
+        dj_row = self._switch(g, _("Fix staircase artifacts"), "dejitter", _("scanner line offset"))
         set_sw = self._setters["dejitter"]
 
-        def set_dejitter(v, set_sw=set_sw):
+        def set_dejitter(v, set_sw=set_sw, row=dj_row):
             set_sw(v)
-            row = set_sw.__self__.get_ancestor(Adw.ActionRow)
             if self.full is None or not hasattr(self, "full_src"):
                 return
             row.set_subtitle(_("line offset detected and corrected") if self.full_dj is not None and v else
@@ -366,6 +365,7 @@ class Window(Adw.ApplicationWindow):
         row.set_activatable_widget(sw)
         self._setters[field] = sw.set_active
         group.add(row)
+        return row
 
     def _reset_button(self, field):
         """Knopf, der einen einzelnen Wert auf die Voreinstellung zurücksetzt."""
