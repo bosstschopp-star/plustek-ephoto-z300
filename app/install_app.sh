@@ -25,8 +25,10 @@ cat > ~/.local/share/applications/io.github.bosstschopp_star.EphotoScan.desktop 
 [Desktop Entry]
 Type=Application
 Name=ePhoto Scan
-GenericName=Fotoscanner
-Comment=Fotos mit dem Plustek ePhoto Z300 scannen und nachbearbeiten
+GenericName=Photo Scanner
+GenericName[de]=Fotoscanner
+Comment=Scan and edit photos with the Plustek ePhoto Z300
+Comment[de]=Fotos mit dem Plustek ePhoto Z300 scannen und nachbearbeiten
 Exec="$APP/.venv/bin/python" "$APP/ephoto_scan.py" %f
 Icon=scanner
 Terminal=false

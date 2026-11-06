@@ -22,21 +22,35 @@ import numpy as np
 from PIL import Image
 
 import filters as F
+from i18n import N_, _, system_languages
 
 PREVIEW_MAX = 1400
 
 # (Schlüssel, Bezeichnung, Endung, braucht Texterkennung)
 FORMATS = (
-    ("pdf", "PDF, durchsuchbar (mit Texterkennung)", ".pdf", True),
-    ("pdf-plain", "PDF, nur Bild", ".pdf", False),
-    ("tiff", "TIFF, alle Seiten in einer Datei", ".tif", False),
-    ("jpg", "JPEG, je Seite eine Datei", ".jpg", False),
-    ("png", "PNG, je Seite eine Datei", ".png", False),
-    ("txt", "Text (nur erkannter Text)", ".txt", True),
+    ("pdf", N_("PDF, searchable (with text recognition)"), ".pdf", True),
+    ("pdf-plain", N_("PDF, image only"), ".pdf", False),
+    ("tiff", N_("TIFF, all pages in one file"), ".tif", False),
+    ("jpg", N_("JPEG, one file per page"), ".jpg", False),
+    ("png", N_("PNG, one file per page"), ".png", False),
+    ("txt", N_("Text (recognized text only)"), ".txt", True),
 )
 FORMAT_BY_KEY = {f[0]: f for f in FORMATS}
-LANG_NAMES = {"deu": "Deutsch", "eng": "Englisch", "fra": "Französisch", "ita": "Italienisch",
-              "spa": "Spanisch", "nld": "Niederländisch", "deu_latf": "Deutsch (Fraktur)", "frk": "Fraktur"}
+# Anzeigenamen (zum Übersetzen markiert, übersetzt wird in der Oberfläche)
+LANG_NAMES = {"deu": N_("German"), "eng": N_("English"), "fra": N_("French"), "ita": N_("Italian"),
+              "spa": N_("Spanish"), "nld": N_("Dutch"), "deu_latf": N_("German (Fraktur)"), "frk": N_("Fraktur")}
+# Systemsprache (ISO 639-1) -> Tesseract-Sprache
+_TESS_CODES = {"de": "deu", "en": "eng", "fr": "fra", "it": "ita", "es": "spa", "nl": "nld"}
+
+
+def default_ocr_lang(langs):
+    """Voreinstellung der Texterkennung passend zur Systemsprache, aus den installierten `langs`."""
+    own = next((_TESS_CODES[lang] for lang in system_languages() if lang in _TESS_CODES), None)
+    if own == "deu" and "deu+eng" in langs:
+        return "deu+eng"
+    if own and own in langs:
+        return f"{own}+eng" if own != "eng" and "eng" in langs else own
+    return "eng" if "eng" in langs else langs[0]
 
 
 def tesseract_langs():
@@ -74,7 +88,7 @@ def _ocr(image_files, outbase, lang, renderers):
     finally:
         Path(lst.name).unlink(missing_ok=True)
     if r.returncode:
-        raise RuntimeError("Texterkennung fehlgeschlagen: " + (r.stderr.strip().splitlines() or ["?"])[-1])
+        raise RuntimeError(_("Text recognition failed: ") + (r.stderr.strip().splitlines() or ["?"])[-1])
 
 
 def ocr_text(img, lang, dpi):
@@ -99,7 +113,7 @@ def export(pages, path, fmt, lang="deu", quality=90, progress=None):
     if key in ("jpg", "png"):
         out = []
         for i, pg in enumerate(pages):
-            say(f"Seite {i + 1} von {n} …")
+            say(_("Page {i} of {n} …").format(i=i + 1, n=n))
             img = render_page(pg)
             f = _numbered(path, i, n)
             kw = {"quality": quality, "subsampling": 0} if key == "jpg" else {}
@@ -111,7 +125,7 @@ def export(pages, path, fmt, lang="deu", quality=90, progress=None):
         tmp = Path(tmp)
         files = []
         for i, pg in enumerate(pages):        # Seiten einzeln rechnen und ablegen: wenig Speicher
-            say(f"Seite {i + 1} von {n} …")
+            say(_("Page {i} of {n} …").format(i=i + 1, n=n))
             img = render_page(pg)
             if key == "tiff":
                 f = tmp / f"s{i:03d}.tif"
@@ -129,11 +143,11 @@ def export(pages, path, fmt, lang="deu", quality=90, progress=None):
             first.save(path, "PDF", save_all=True, append_images=rest, resolution=float(pages[0].dpi),
                        quality=quality)
         elif key == "pdf":
-            say("Texterkennung …")
+            say(_("Recognizing text …"))
             _ocr(files, tmp / "out", lang, ["pdf"])
             shutil.move(tmp / "out.pdf", path)
         elif key == "txt":
-            say("Texterkennung …")
+            say(_("Recognizing text …"))
             _ocr(files, tmp / "out", lang, ["txt"])
             shutil.move(tmp / "out.txt", path)
         return [path]

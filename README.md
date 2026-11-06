@@ -16,7 +16,7 @@ the device on Linux.
 | Part | Description |
 |---|---|
 | `sane/` | **SANE backend** in C (libusb). The scanner shows up in GNOME Document Scanner, XSane, GIMP, `scanimage`. 300 and 600 dpi colour, A4. |
-| `app/` | **ePhoto Scan** — GTK 4 / libadwaita app: scanning (manual or automatically when a photo is inserted), filters with live preview, zoom, crop, multi-page documents, export to searchable PDF (OCR), TIFF, JPEG, PNG, text. |
+| `app/` | **ePhoto Scan** — GTK 4 / libadwaita app: scanning (manual or automatically when a photo is inserted), filters with live preview, zoom, crop, multi-page documents, export to searchable PDF (OCR), TIFF, JPEG, PNG, text. UI in English or German, following the system language (`app/locale/*.po`). |
 | `src/` | Python driver and diagnostic tools (pyusb). |
 | `docs/PROTOCOL.md` | The reconstructed USB protocol (German). |
 | `tools/` | udev rule, capture parsers; `tools/re/` reverse-engineering scripts. |
@@ -83,7 +83,8 @@ Fotoscanner **Plustek ePhoto Z300**.
 - `app/` — **ePhoto Scan**: Scannen (per Knopf oder automatisch beim Einlegen),
   Filter mit Live-Vorschau (Ton & Farbe, Restaurierung, Schärfe & Rauschen),
   Zoom, Zuschneiden, mehrseitige Dokumente, Export als durchsuchbares PDF,
-  TIFF, JPEG, PNG oder Text.
+  TIFF, JPEG, PNG oder Text. Oberfläche auf Deutsch oder Englisch, je nach
+  Systemsprache.
 - `docs/PROTOCOL.md` — das rekonstruierte USB-Protokoll.
 
 Installation siehe oben (`sudo bash install.sh`, danach optional

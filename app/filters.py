@@ -20,6 +20,8 @@ from dataclasses import asdict, dataclass, fields, replace
 import cv2
 import numpy as np
 
+from i18n import N_
+
 # Tonwertkurve des Z300, am Windows-Scan gemessen (siehe sane/enhance.h)
 SCANNER_CURVE_X = list(range(0, 256, 16)) + [255]
 SCANNER_CURVE_Y = [39.9, 64.2, 101.0, 124.9, 143.7, 158.4, 171.4, 182.6, 193.1,
@@ -76,14 +78,14 @@ class Params:
 
 
 PRESETS = {
-    "Foto (wie Windows)": Params(),
-    "Altes Foto restaurieren": Params(fade_restore=0.5, auto_levels=0.3, local_contrast=0.2,
+    N_("Photo (like Windows)"): Params(),
+    N_("Restore old photo"): Params(fade_restore=0.5, auto_levels=0.3, local_contrast=0.2,
                                       dust=0.4, denoise=0.1, sharpen=0.35),
-    "Schwarzweiss-Foto": Params(color_mode="sw", auto_levels=0.4, local_contrast=0.25,
+    N_("Black-and-white photo"): Params(color_mode="sw", auto_levels=0.4, local_contrast=0.25,
                                 dust=0.4, denoise=0.1, sharpen=0.35),
     # bei Dokumenten gehört der weisse Rand zur Seite
-    "Dokument / Text": Params(auto_levels=1.0, contrast=0.3, sharpen=0.8, trim_border=False),
-    "Ohne Bearbeitung": Params(scanner_curve=False, sharpen=0.0, auto_crop=False),
+    N_("Document / text"): Params(auto_levels=1.0, contrast=0.3, sharpen=0.8, trim_border=False),
+    N_("No processing"): Params(scanner_curve=False, sharpen=0.0, auto_crop=False),
 }
 
 

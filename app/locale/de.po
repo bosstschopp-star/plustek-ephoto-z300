@@ -1,0 +1,527 @@
+# German translation of ePhoto Scan.
+# Read at runtime by i18n.py; no compilation needed.
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: de\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Free"
+msgstr "Frei"
+
+msgid "Original"
+msgstr "Wie Original"
+
+msgid "Square 1:1"
+msgstr "Quadrat 1:1"
+
+msgid "4 × 6 in (2:3)"
+msgstr "10 × 15 (2:3)"
+
+msgid "5 × 7 in (5:7)"
+msgstr "13 × 18 (5:7)"
+
+msgid "Scan on button press"
+msgstr "Per Knopf scannen"
+
+msgid "Automatically when inserted"
+msgstr "Automatisch beim Einlegen"
+
+msgid "Start scan"
+msgstr "Scanstart"
+
+msgid "Append new scans as additional page"
+msgstr "Neue Scans als weitere Seite anhängen"
+
+msgid "Start new document"
+msgstr "Neues Dokument beginnen"
+
+msgid "Multi-page documents"
+msgstr "Mehrseitige Dokumente"
+
+msgid "Resolution"
+msgstr "Auflösung"
+
+msgid "Recognize text (current page) …"
+msgstr "Text erkennen (aktuelle Seite) …"
+
+msgid "Save raw scan …"
+msgstr "Rohscan speichern …"
+
+msgid "About ePhoto Scan"
+msgstr "Über ePhoto Scan"
+
+msgid "Whole image (0)"
+msgstr "Ganzes Bild (0)"
+
+msgid "Straighten"
+msgstr "Begradigen"
+
+msgid "degrees"
+msgstr "Grad"
+
+msgid "Crop to photo automatically"
+msgstr "Automatisch auf das Foto zuschneiden"
+
+msgid "remove dark scanner background"
+msgstr "dunklen Scannerhintergrund entfernen"
+
+msgid "Also remove paper border"
+msgstr "Papierrand mit entfernen"
+
+msgid "cut off the white or cream border of old prints"
+msgstr "weissen oder cremefarbenen Rand alter Abzüge abschneiden"
+
+msgid "Inset margin"
+msgstr "Rand nach innen"
+
+msgid "pixels, for automatic crop"
+msgstr "Pixel, beim automatischen Zuschnitt"
+
+msgid "Scanner curve"
+msgstr "Scanner-Kennlinie"
+
+msgid "on for raw scans — like the Windows software"
+msgstr "für Rohscans an — wie die Windows-Software"
+
+msgid "Auto levels"
+msgstr "Automatischer Tonwert"
+
+msgid "Brightness"
+msgstr "Helligkeit"
+
+msgid "Contrast"
+msgstr "Kontrast"
+
+msgid "Gamma"
+msgstr "Gamma"
+
+msgid "Color temperature"
+msgstr "Farbtemperatur"
+
+msgid "cool ↔ warm"
+msgstr "kalt ↔ warm"
+
+msgid "Tint"
+msgstr "Tönung"
+
+msgid "green ↔ magenta"
+msgstr "grün ↔ magenta"
+
+msgid "Saturation"
+msgstr "Sättigung"
+
+msgid "Fix staircase artifacts"
+msgstr "Treppen korrigieren"
+
+msgid "scanner line offset"
+msgstr "Zeilenversatz des Scanners"
+
+msgid "Restore faded colors"
+msgstr "Verblassung ausgleichen"
+
+msgid "color cast of old prints"
+msgstr "Farbstich alter Abzüge"
+
+msgid "Local contrast"
+msgstr "Lokaler Kontrast"
+
+msgid "Dust &amp; scratches"
+msgstr "Staub &amp; Kratzer"
+
+msgid "Denoise"
+msgstr "Entrauschen"
+
+msgid "Smooth film grain"
+msgstr "Filmkorn glätten"
+
+msgid "Sharpen"
+msgstr "Nachschärfen"
+
+msgid "Sharpen radius"
+msgstr "Schärferadius"
+
+msgid "pixels"
+msgstr "Pixel"
+
+msgid "Recognizing text …"
+msgstr "Texterkennung …"
+
+msgid "Aspect ratio"
+msgstr "Seitenverhältnis"
+
+msgid "JPEG quality"
+msgstr "JPEG-Qualität"
+
+msgid "Cancel"
+msgstr "Abbrechen"
+
+msgid "Save …"
+msgstr "Speichern …"
+
+msgid "Scan"
+msgstr "Scannen"
+
+msgid "Scan on button press or automatically"
+msgstr "Per Knopf oder automatisch scannen"
+
+msgid "Open image (Ctrl+O)"
+msgstr "Bild öffnen (Strg+O)"
+
+msgid "Save"
+msgstr "Speichern"
+
+msgid "Save edited image (Ctrl+S)"
+msgstr "Bearbeitetes Bild speichern (Strg+S)"
+
+msgid "Zoom out (−)"
+msgstr "Verkleinern (−)"
+
+msgid "Fit"
+msgstr "Ganz"
+
+msgid "Zoom level"
+msgstr "Zoomstufe"
+
+msgid "Zoom in (+)"
+msgstr "Vergrössern (+)"
+
+msgid "Before"
+msgstr "Vorher"
+
+msgid "Compare without filters (scanner curve only)"
+msgstr "Ohne Filter vergleichen (nur Scanner-Kennlinie)"
+
+msgid "No image yet"
+msgstr "Noch kein Bild"
+
+msgid "Insert a photo and press “Scan”\nor open an image."
+msgstr "Foto einlegen und „Scannen“ drücken\noder ein Bild öffnen."
+
+msgid "Scanning …"
+msgstr "Scanne …"
+
+msgid "The sheet is passing through the scanner."
+msgstr "Das Blatt läuft durch den Scanner."
+
+msgid "Preset"
+msgstr "Voreinstellung"
+
+msgid "Style"
+msgstr "Stil"
+
+msgid "Reset to preset"
+msgstr "Auf Voreinstellung zurücksetzen"
+
+msgid "Geometry"
+msgstr "Geometrie"
+
+msgid "Rotate"
+msgstr "Drehen"
+
+msgid "Crop"
+msgstr "Zuschneiden"
+
+msgid "whole image"
+msgstr "ganzes Bild"
+
+msgid "Set frame …"
+msgstr "Rahmen setzen …"
+
+msgid "Drag the crop in the image (C)"
+msgstr "Zuschnitt im Bild ziehen (C)"
+
+msgid "Tone &amp; Color"
+msgstr "Ton &amp; Farbe"
+
+msgid "Color mode"
+msgstr "Farbmodus"
+
+msgid "Photo restoration"
+msgstr "Foto-Restaurierung"
+
+msgid "Sharpness &amp; Noise"
+msgstr "Schärfe &amp; Rauschen"
+
+msgid "Affects the finest details — zoom in to judge (mouse wheel, double-click = 100 %)."
+msgstr "Wirkt auf feinste Details — zum Beurteilen hineinzoomen (Mausrad, Doppelklick = 100 %)."
+
+msgid "Reset"
+msgstr "Zurücksetzen"
+
+msgid "This filter is only visible when zoomed in — double-click the image for 100 %"
+msgstr "Diesen Filter sieht man erst hineingezoomt — Doppelklick ins Bild für 100 %"
+
+msgid "Image is already processed — scanner curve turned off"
+msgstr "Bild ist bereits aufbereitet — Scanner-Kennlinie ausgeschaltet"
+
+msgid "Move page forward"
+msgstr "Seite nach vorne"
+
+msgid "Move page back"
+msgstr "Seite nach hinten"
+
+msgid "Remove page"
+msgstr "Seite entfernen"
+
+msgid "Apply to all pages"
+msgstr "Auf alle Seiten"
+
+msgid "Apply this page's settings to all pages (except crop)"
+msgstr "Einstellungen dieser Seite auf alle Seiten übertragen (ohne Zuschnitt)"
+
+msgid "Scan another page"
+msgstr "Weitere Seite scannen"
+
+msgid "Undo"
+msgstr "Rückgängig"
+
+msgid "Multi-page: each scan is appended as another page"
+msgstr "Mehrseitig: jeder Scan wird als weitere Seite angehängt"
+
+msgid "Discard"
+msgstr "Verwerfen"
+
+msgid "Text recognition not installed: sudo apt install tesseract-ocr"
+msgstr "Texterkennung nicht installiert: sudo apt install tesseract-ocr tesseract-ocr-deu"
+
+msgid "Swap portrait/landscape"
+msgstr "Hoch-/Querformat tauschen"
+
+msgid "Whole image"
+msgstr "Ganzes Bild"
+
+msgid "Set frame to the whole image"
+msgstr "Rahmen auf das ganze Bild setzen"
+
+msgid "Apply"
+msgstr "Übernehmen"
+
+msgid "Automatic"
+msgstr "Automatisch"
+
+msgid "Scanning starts as soon as a photo is inserted — click to scan now"
+msgstr "Scan startet, sobald ein Foto eingelegt ist — Klick scannt sofort"
+
+msgid "Scan now"
+msgstr "Jetzt scannen"
+
+msgid "Insert a photo — scanning starts automatically.\nOr open an image."
+msgstr "Foto einlegen — der Scan startet automatisch.\nOder ein Bild öffnen."
+
+msgid "No sheet inserted."
+msgstr "Kein Blatt eingelegt."
+
+msgid "Open image"
+msgstr "Bild öffnen"
+
+msgid "Images"
+msgstr "Bilder"
+
+msgid "Save raw scan"
+msgstr "Rohscan speichern"
+
+msgid "Format"
+msgstr "Format"
+
+msgid "Pages"
+msgstr "Seiten"
+
+msgid "Text recognition language"
+msgstr "Sprache der Texterkennung"
+
+msgid "set manually"
+msgstr "von Hand gesetzt"
+
+msgid "line offset detected and corrected"
+msgstr "Zeilenversatz erkannt und ausgeglichen"
+
+msgid "Settings applied to all {n} pages"
+msgstr "Einstellungen auf alle {n} Seiten übertragen"
+
+msgid "New document?"
+msgstr "Neues Dokument?"
+
+msgid "(no text recognized)"
+msgstr "(kein Text erkannt)"
+
+msgid "Copy"
+msgstr "Kopieren"
+
+msgid "Text copied to clipboard"
+msgstr "Text in die Zwischenablage kopiert"
+
+msgid "Scanner not found — is it connected and not passed through to a VM?"
+msgstr "Scanner nicht gefunden — angeschlossen und nicht an die VM durchgereicht?"
+
+msgid "Restore"
+msgstr "Zurückholen"
+
+msgid "Text recognition missing — please install it"
+msgstr "Texterkennung fehlt — bitte installieren"
+
+msgid "This format needs text recognition: sudo apt install tesseract-ocr"
+msgstr "Für dieses Format fehlt die Texterkennung: sudo apt install tesseract-ocr tesseract-ocr-deu"
+
+msgid "automatic"
+msgstr "automatisch"
+
+msgid "Color"
+msgstr "Farbe"
+
+msgid "Black and white"
+msgstr "Schwarzweiss"
+
+msgid "Sepia"
+msgstr "Sepia"
+
+msgid "line offset detected — not corrected"
+msgstr "Zeilenversatz erkannt — nicht ausgeglichen"
+
+msgid "no line offset in image — nothing to do"
+msgstr "kein Zeilenversatz im Bild — nichts zu tun"
+
+msgid "Processing error: {err}"
+msgstr "Fehler in der Bearbeitung: {err}"
+
+msgid "CROP: drag a frame, Enter applies, Esc cancels"
+msgstr "ZUSCHNEIDEN: Rahmen ziehen, Enter übernimmt, Esc bricht ab"
+
+msgid "Page {n} removed"
+msgstr "Seite {n} entfernt"
+
+msgid "Scan failed: {err}"
+msgstr "Scan fehlgeschlagen: {err}"
+
+msgid "_raw"
+msgstr "_roh"
+
+msgid "Current page only"
+msgstr "Nur aktuelle Seite"
+
+msgid "Saving failed: {err}"
+msgstr "Speichern fehlgeschlagen: {err}"
+
+msgid "Scanning and editing with the Plustek ePhoto Z300"
+msgstr "Scannen und Nachbearbeiten mit dem Plustek ePhoto Z300"
+
+msgid "Staircase correction failed: {err}"
+msgstr "Treppen-Korrektur fehlgeschlagen: {err}"
+
+msgid "Cannot open {name}: {err}"
+msgstr "Kann {name} nicht öffnen: {err}"
+
+msgid "BEFORE"
+msgstr "VORHER"
+
+msgid "Page {n}: {name}"
+msgstr "Seite {n}: {name}"
+
+msgid "The current document ({n} page) has not been saved."
+msgid_plural "The current document ({n} pages) has not been saved."
+msgstr[0] "Das aktuelle Dokument ({n} Seite) ist nicht gespeichert."
+msgstr[1] "Das aktuelle Dokument ({n} Seiten) ist nicht gespeichert."
+
+msgid "“{name}” was not saved"
+msgstr "„{name}“ war nicht gespeichert"
+
+msgid "German + English"
+msgstr "Deutsch + Englisch"
+
+msgid "Saved: {name}"
+msgstr "Gespeichert: {name}"
+
+msgid "All {n} pages"
+msgstr "Alle {n} Seiten"
+
+msgid "Recognized text — page {n}"
+msgstr "Erkannter Text — Seite {n}"
+
+msgid "scanimage exit code {code}"
+msgstr "scanimage Rückgabewert {code}"
+
+msgid "and {n} more"
+msgid_plural "and {n} more"
+msgstr[0] "und {n} weitere"
+msgstr[1] "und {n} weitere"
+
+msgid "Result {size} px ({w}×{h} mm)"
+msgstr "Ergebnis {size} px ({w}×{h} mm)"
+
+msgid "German"
+msgstr "Deutsch"
+
+msgid "English"
+msgstr "Englisch"
+
+msgid "French"
+msgstr "Französisch"
+
+msgid "Italian"
+msgstr "Italienisch"
+
+msgid "Spanish"
+msgstr "Spanisch"
+
+msgid "Dutch"
+msgstr "Niederländisch"
+
+msgid "German (Fraktur)"
+msgstr "Deutsch (Fraktur)"
+
+msgid "Fraktur"
+msgstr "Fraktur"
+
+msgid "PDF, searchable (with text recognition)"
+msgstr "PDF, durchsuchbar (mit Texterkennung)"
+
+msgid "PDF, image only"
+msgstr "PDF, nur Bild"
+
+msgid "TIFF, all pages in one file"
+msgstr "TIFF, alle Seiten in einer Datei"
+
+msgid "JPEG, one file per page"
+msgstr "JPEG, je Seite eine Datei"
+
+msgid "PNG, one file per page"
+msgstr "PNG, je Seite eine Datei"
+
+msgid "Text (recognized text only)"
+msgstr "Text (nur erkannter Text)"
+
+msgid "Text recognition failed: "
+msgstr "Texterkennung fehlgeschlagen: "
+
+msgid "Page {i} of {n} …"
+msgstr "Seite {i} von {n} …"
+
+msgid "Waiting for photo …"
+msgstr "Warte auf Foto …"
+
+msgid "Photo detected …"
+msgstr "Foto erkannt …"
+
+msgid "Scanner not found"
+msgstr "Scanner nicht gefunden"
+
+msgid "Scanner not reachable"
+msgstr "Scanner nicht erreichbar"
+
+msgid "Remove the photo …"
+msgstr "Foto entnehmen …"
+
+msgid "Photo (like Windows)"
+msgstr "Foto (wie Windows)"
+
+msgid "Restore old photo"
+msgstr "Altes Foto restaurieren"
+
+msgid "Black-and-white photo"
+msgstr "Schwarzweiss-Foto"
+
+msgid "Document / text"
+msgstr "Dokument / Text"
+
+msgid "No processing"
+msgstr "Ohne Bearbeitung"

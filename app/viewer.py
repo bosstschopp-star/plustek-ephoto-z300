@@ -25,6 +25,8 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Gsk", "4.0")
 from gi.repository import Gdk, GLib, GObject, Graphene, Gsk, Gtk  # noqa: E402
 
+from i18n import _  # noqa: E402
+
 MAX_ZOOM_DEV = 8.0        # höchstens 800 %
 HANDLE = 10               # Fangradius der Anfasser in logischen Pixeln
 MIN_CROP = 32             # kleinster Zuschnitt in Bildpixeln
@@ -456,4 +458,4 @@ class ImageView(Gtk.Widget):
 def zoom_label(view):
     if not view.iw:
         return "–"
-    return "Ganz" if view.is_fit() else f"{math.floor(view.zoom_percent() + 0.5)} %"
+    return _("Fit") if view.is_fit() else f"{math.floor(view.zoom_percent() + 0.5)} %"

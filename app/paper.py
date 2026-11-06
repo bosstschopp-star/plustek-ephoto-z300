@@ -10,6 +10,8 @@ nicht zwischen die Transfers des Backends gerät.
 import threading
 import time
 
+from i18n import _
+
 VID, PID = 0x07B3, 0x143D
 REG_STATUS, DOCSENSOR = 0x101, 0x08
 
@@ -94,27 +96,27 @@ class PaperWatcher:
                     continue
                 try:
                     if self._dev is None and not self._open():
-                        state("Scanner nicht gefunden")
+                        state(_("Scanner not found"))
                         time.sleep(1.5)
                         continue
                     present = self._paper_present()
                 except Exception:  # noqa: BLE001  (abgezogen, belegt, Rechte)
                     self._close()
-                    state("Scanner nicht erreichbar")
+                    state(_("Scanner not reachable"))
                     time.sleep(1.5)
                     continue
                 if self._wait_for_removal:
                     if present:
-                        state("Foto entnehmen …")
+                        state(_("Remove the photo …"))
                         continue
                     self._wait_for_removal = False
                 if not present:
                     since = None
-                    state("Warte auf Foto …")
+                    state(_("Waiting for photo …"))
                     continue
                 if since is None:
                     since = time.monotonic()
-                    state("Foto erkannt …")
+                    state(_("Photo detected …"))
                     continue
                 if time.monotonic() - since < self.settle:
                     continue
@@ -122,5 +124,5 @@ class PaperWatcher:
                 since = None
                 self._paused = True
                 self._close()
-            state("Scanne …")
+            state(_("Scanning …"))
             self.on_paper()

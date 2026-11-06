@@ -35,6 +35,7 @@ import filters as F  # noqa: E402
 import export as X  # noqa: E402
 import paper as PW  # noqa: E402
 import viewer as V  # noqa: E402
+from i18n import N_, _, ngettext  # noqa: E402
 
 APP_ID = "io.github.bosstschopp_star.EphotoScan"
 DEVICE = "ephoto:ephoto:z300"
@@ -42,8 +43,8 @@ PREVIEW_MAX = 1400               # längste Seite der Vorschau in Pixeln
 # Regler, deren Wirkung nur hineingezoomt zu sehen ist
 DETAIL_FIELDS = {"dust", "denoise", "grain", "sharpen", "sharpen_radius"}
 # Seitenverhältnisse fürs Zuschneiden: (Name, lange/kurze Seite oder None)
-ASPECTS = (("Frei", None), ("Wie Original", "orig"), ("Quadrat 1:1", 1.0), ("10 × 15 (2:3)", 1.5),
-           ("13 × 18 (5:7)", 1.4), ("4:5", 1.25), ("A4", 2 ** 0.5))
+ASPECTS = ((N_("Free"), None), (N_("Original"), "orig"), (N_("Square 1:1"), 1.0), (N_("4 × 6 in (2:3)"), 1.5),
+           (N_("5 × 7 in (5:7)"), 1.4), ("4:5", 1.25), ("A4", 2 ** 0.5))
 CONFIG = Path(GLib.get_user_config_dir()) / "ephoto-scan" / "settings.json"
 
 
@@ -126,15 +127,15 @@ class Window(Adw.ApplicationWindow):
 
         scan_menu = Gio.Menu()
         modes = Gio.Menu()
-        modes.append("Per Knopf scannen", "win.scan-mode::manual")
-        modes.append("Automatisch beim Einlegen", "win.scan-mode::auto")
-        scan_menu.append_section("Scanstart", modes)
+        modes.append(_("Scan on button press"), "win.scan-mode::manual")
+        modes.append(_("Automatically when inserted"), "win.scan-mode::auto")
+        scan_menu.append_section(_("Start scan"), modes)
         multi = Gio.Menu()
-        multi.append("Neue Scans als weitere Seite anhängen", "win.multipage")
-        multi.append("Neues Dokument beginnen", "win.new-doc")
-        scan_menu.append_section("Mehrseitige Dokumente", multi)
-        self.scan_btn = Adw.SplitButton(label="Scannen", menu_model=scan_menu,
-                                        dropdown_tooltip="Per Knopf oder automatisch scannen")
+        multi.append(_("Append new scans as additional page"), "win.multipage")
+        multi.append(_("Start new document"), "win.new-doc")
+        scan_menu.append_section(_("Multi-page documents"), multi)
+        self.scan_btn = Adw.SplitButton(label=_("Scan"), menu_model=scan_menu,
+                                        dropdown_tooltip=_("Scan on button press or automatically"))
         self.scan_btn.add_css_class("suggested-action")
         self.scan_btn.connect("clicked", lambda *_: self.scan())
         mode = Gio.SimpleAction.new_stateful("scan-mode", GLib.VariantType.new("s"),
@@ -149,36 +150,37 @@ class Window(Adw.ApplicationWindow):
         header.set_title_widget(self.title)
         self.res_dd = Gtk.DropDown.new_from_strings(["300 dpi", "600 dpi"])
         self.res_dd.set_selected(1 if self.settings.get("dpi", 600) == 600 else 0)
-        self.res_dd.set_tooltip_text("Auflösung")
-        open_btn = Gtk.Button(icon_name="document-open-symbolic", tooltip_text="Bild öffnen (Strg+O)")
+        self.res_dd.set_tooltip_text(_("Resolution"))
+        open_btn = Gtk.Button(icon_name="document-open-symbolic", tooltip_text=_("Open image (Ctrl+O)"))
         open_btn.connect("clicked", lambda *_: self.open_dialog())
         header.pack_start(self.scan_btn)
         header.pack_start(self.res_dd)
         header.pack_start(open_btn)
 
         menu = Gio.Menu()
-        menu.append("Text erkennen (aktuelle Seite) …", "win.ocr")
-        menu.append("Rohscan speichern …", "win.save-raw")
-        menu.append("Über ePhoto Scan", "win.about")
+        menu.append(_("Recognize text (current page) …"), "win.ocr")
+        menu.append(_("Save raw scan …"), "win.save-raw")
+        menu.append(_("About ePhoto Scan"), "win.about")
         header.pack_end(Gtk.MenuButton(icon_name="open-menu-symbolic", menu_model=menu))
-        self.save_btn = Gtk.Button(label="Speichern", tooltip_text="Bearbeitetes Bild speichern (Strg+S)")
+        self.save_btn = Gtk.Button(label=_("Save"), tooltip_text=_("Save edited image (Ctrl+S)"))
         self.save_btn.connect("clicked", lambda *_: self.save_dialog())
         header.pack_end(self.save_btn)
         zoombox = Gtk.Box(css_classes=["linked"])
-        zout = Gtk.Button(icon_name="zoom-out-symbolic", tooltip_text="Verkleinern (−)")
+        zout = Gtk.Button(icon_name="zoom-out-symbolic", tooltip_text=_("Zoom out (−)"))
         zout.connect("clicked", lambda *_: self.view.zoom_by(1 / 1.5))
-        self.zoom_btn = Gtk.MenuButton(label="Ganz", tooltip_text="Zoomstufe", width_request=72)
+        self.zoom_btn = Gtk.MenuButton(label=_("Fit"), tooltip_text=_("Zoom level"), width_request=72)
         zmenu = Gio.Menu()
-        zmenu.append("Ganzes Bild (0)", "win.zoom-fit")
+        zmenu.append(_("Whole image (0)"), "win.zoom-fit")
         for pct in (50, 100, 200, 400):
             zmenu.append(f"{pct} %" + (" (1)" if pct == 100 else ""), f"win.zoom-to({pct})")
         self.zoom_btn.set_menu_model(zmenu)
-        zin = Gtk.Button(icon_name="zoom-in-symbolic", tooltip_text="Vergrössern (+)")
+        zin = Gtk.Button(icon_name="zoom-in-symbolic", tooltip_text=_("Zoom in (+)"))
         zin.connect("clicked", lambda *_: self.view.zoom_by(1.5))
         for w in (zout, self.zoom_btn, zin):
             zoombox.append(w)
         self.zoom_widgets = (zout, self.zoom_btn, zin)
-        self.before_btn = Gtk.ToggleButton(label="Vorher", tooltip_text="Ohne Filter vergleichen (nur Scanner-Kennlinie)")
+        self.before_btn = Gtk.ToggleButton(label=_("Before"),
+                                         tooltip_text=_("Compare without filters (scanner curve only)"))
         self.before_btn.connect("toggled", lambda *_: self.refresh())
         header.pack_end(zoombox)
         header.pack_end(self.before_btn)
@@ -210,9 +212,9 @@ class Window(Adw.ApplicationWindow):
         overlay = Gtk.Overlay(child=self.view)
         overlay.add_overlay(self.spinner)
         overlay.add_overlay(self._crop_bar())
-        self.status = Adw.StatusPage(icon_name="scanner-symbolic", title="Noch kein Bild",
-                                     description="Foto einlegen und „Scannen“ drücken\noder ein Bild öffnen.")
-        self.busy = Adw.StatusPage(title="Scanne …", description="Das Blatt läuft durch den Scanner.")
+        self.status = Adw.StatusPage(icon_name="scanner-symbolic", title=_("No image yet"),
+                                     description=_("Insert a photo and press “Scan”\nor open an image."))
+        self.busy = Adw.StatusPage(title=_("Scanning …"), description=_("The sheet is passing through the scanner."))
         self.busy.set_child(Adw.Spinner(width_request=48, height_request=48))
         self.stack = Gtk.Stack()
         self.stack.add_named(self.status, "empty")
@@ -240,57 +242,58 @@ class Window(Adw.ApplicationWindow):
     def _sidebar(self):
         page = Adw.PreferencesPage(width_request=400)
 
-        g = Adw.PreferencesGroup(title="Voreinstellung")
-        self.preset_row = Adw.ComboRow(title="Stil", model=Gtk.StringList.new(list(F.PRESETS)))
+        g = Adw.PreferencesGroup(title=_("Preset"))
+        self.preset_row = Adw.ComboRow(title=_("Style"), model=Gtk.StringList.new([_(k) for k in F.PRESETS]))
         self.preset_row.connect("notify::selected", self._on_preset)
         g.add(self.preset_row)
-        reset = Adw.ButtonRow(title="Auf Voreinstellung zurücksetzen")
+        reset = Adw.ButtonRow(title=_("Reset to preset"))
         reset.connect("activated", lambda *_: self._on_preset())
         g.add(reset)
         page.add(g)
 
-        g = Adw.PreferencesGroup(title="Geometrie")
-        rot = Adw.ActionRow(title="Drehen")
+        g = Adw.PreferencesGroup(title=_("Geometry"))
+        rot = Adw.ActionRow(title=_("Rotate"))
         for icon, d in (("object-rotate-left-symbolic", -90), ("object-rotate-right-symbolic", 90)):
             b = Gtk.Button(icon_name=icon, valign=Gtk.Align.CENTER, css_classes=["flat"])
             b.connect("clicked", lambda _b, d=d: self._set("rotate", (self.params.rotate + d) % 360))
             rot.add_suffix(b)
         rot.add_suffix(self._reset_button("rotate"))
         g.add(rot)
-        self._slider(g, "Begradigen", "straighten", -10, 10, 0.1, 1, "Grad")
-        self.crop_row = Adw.ActionRow(title="Zuschneiden", subtitle="ganzes Bild")
-        cb = Gtk.Button(label="Rahmen setzen …", valign=Gtk.Align.CENTER, action_name="win.crop",
-                        tooltip_text="Zuschnitt im Bild ziehen (C)")
+        self._slider(g, _("Straighten"), "straighten", -10, 10, 0.1, 1, _("degrees"))
+        self.crop_row = Adw.ActionRow(title=_("Crop"), subtitle=_("whole image"))
+        cb = Gtk.Button(label=_("Set frame …"), valign=Gtk.Align.CENTER, action_name="win.crop",
+                        tooltip_text=_("Drag the crop in the image (C)"))
         self.crop_row.add_suffix(cb)
         self.crop_row.add_suffix(self._reset_button("crop"))
         self._setters["crop"] = lambda v: self.crop_row.set_subtitle(
-            "von Hand gesetzt" if v else ("automatisch" if self.params.auto_crop else "ganzes Bild"))
+            _("set manually") if v else (_("automatic") if self.params.auto_crop else _("whole image")))
         g.add(self.crop_row)
-        self._switch(g, "Automatisch auf das Foto zuschneiden", "auto_crop",
-                     "dunklen Scannerhintergrund entfernen")
-        self._switch(g, "Papierrand mit entfernen", "trim_border",
-                     "weissen oder cremefarbenen Rand alter Abzüge abschneiden")
-        self._slider(g, "Rand nach innen", "crop_margin", 0, 100, 1, 0, "Pixel, beim automatischen Zuschnitt")
+        self._switch(g, _("Crop to photo automatically"), "auto_crop",
+                     _("remove dark scanner background"))
+        self._switch(g, _("Also remove paper border"), "trim_border",
+                     _("cut off the white or cream border of old prints"))
+        self._slider(g, _("Inset margin"), "crop_margin", 0, 100, 1, 0, _("pixels, for automatic crop"))
         page.add(g)
 
-        g = Adw.PreferencesGroup(title="Ton &amp; Farbe")
-        self._switch(g, "Scanner-Kennlinie", "scanner_curve", "für Rohscans an — wie die Windows-Software")
-        self._slider(g, "Automatischer Tonwert", "auto_levels", 0, 1, 0.05, 2)
-        self._slider(g, "Helligkeit", "brightness", -1, 1, 0.02, 2)
-        self._slider(g, "Kontrast", "contrast", -1, 1, 0.02, 2)
-        self._slider(g, "Gamma", "gamma", 0.5, 2, 0.02, 2)
-        self._slider(g, "Farbtemperatur", "temperature", -1, 1, 0.02, 2, "kalt ↔ warm")
-        self._slider(g, "Tönung", "tint", -1, 1, 0.02, 2, "grün ↔ magenta")
-        self._slider(g, "Sättigung", "saturation", 0, 2, 0.02, 2)
-        modes = Adw.ComboRow(title="Farbmodus", model=Gtk.StringList.new(["Farbe", "Schwarzweiss", "Sepia"]))
+        g = Adw.PreferencesGroup(title=_("Tone &amp; Color"))
+        self._switch(g, _("Scanner curve"), "scanner_curve", _("on for raw scans — like the Windows software"))
+        self._slider(g, _("Auto levels"), "auto_levels", 0, 1, 0.05, 2)
+        self._slider(g, _("Brightness"), "brightness", -1, 1, 0.02, 2)
+        self._slider(g, _("Contrast"), "contrast", -1, 1, 0.02, 2)
+        self._slider(g, _("Gamma"), "gamma", 0.5, 2, 0.02, 2)
+        self._slider(g, _("Color temperature"), "temperature", -1, 1, 0.02, 2, _("cool ↔ warm"))
+        self._slider(g, _("Tint"), "tint", -1, 1, 0.02, 2, _("green ↔ magenta"))
+        self._slider(g, _("Saturation"), "saturation", 0, 2, 0.02, 2)
+        modes = Adw.ComboRow(title=_("Color mode"),
+                             model=Gtk.StringList.new([_("Color"), _("Black and white"), _("Sepia")]))
         modes.connect("notify::selected", lambda r, _p: self._set("color_mode", F.COLOR_MODES[r.get_selected()]))
         self._setters["color_mode"] = lambda v, r=modes: r.set_selected(F.COLOR_MODES.index(v))
         modes.add_suffix(self._reset_button("color_mode"))
         g.add(modes)
         page.add(g)
 
-        g = Adw.PreferencesGroup(title="Foto-Restaurierung")
-        self._switch(g, "Treppen korrigieren", "dejitter", "Zeilenversatz des Scanners")
+        g = Adw.PreferencesGroup(title=_("Photo restoration"))
+        self._switch(g, _("Fix staircase artifacts"), "dejitter", _("scanner line offset"))
         set_sw = self._setters["dejitter"]
 
         def set_dejitter(v, set_sw=set_sw):
@@ -298,22 +301,22 @@ class Window(Adw.ApplicationWindow):
             row = set_sw.__self__.get_ancestor(Adw.ActionRow)
             if self.full is None or not hasattr(self, "full_src"):
                 return
-            row.set_subtitle("Zeilenversatz erkannt und ausgeglichen" if self.full_dj is not None and v else
-                             "Zeilenversatz erkannt — nicht ausgeglichen" if self.full_dj is not None else
-                             "kein Zeilenversatz im Bild — nichts zu tun")
+            row.set_subtitle(_("line offset detected and corrected") if self.full_dj is not None and v else
+                             _("line offset detected — not corrected") if self.full_dj is not None else
+                             _("no line offset in image — nothing to do"))
         self._setters["dejitter"] = set_dejitter
-        self._slider(g, "Verblassung ausgleichen", "fade_restore", 0, 1, 0.05, 2, "Farbstich alter Abzüge")
-        self._slider(g, "Lokaler Kontrast", "local_contrast", 0, 1, 0.05, 2)
-        self._slider(g, "Staub &amp; Kratzer", "dust", 0, 1, 0.05, 2)
+        self._slider(g, _("Restore faded colors"), "fade_restore", 0, 1, 0.05, 2, _("color cast of old prints"))
+        self._slider(g, _("Local contrast"), "local_contrast", 0, 1, 0.05, 2)
+        self._slider(g, _("Dust &amp; scratches"), "dust", 0, 1, 0.05, 2)
         page.add(g)
 
-        g = Adw.PreferencesGroup(title="Schärfe &amp; Rauschen",
-                                 description="Wirkt auf feinste Details — zum Beurteilen hineinzoomen "
-                                             "(Mausrad, Doppelklick = 100 %).")
-        self._slider(g, "Entrauschen", "denoise", 0, 1, 0.05, 2)
-        self._slider(g, "Filmkorn glätten", "grain", 0, 1, 0.05, 2)
-        self._slider(g, "Nachschärfen", "sharpen", 0, 3, 0.05, 2)
-        self._slider(g, "Schärferadius", "sharpen_radius", 0.5, 3, 0.1, 1, "Pixel")
+        g = Adw.PreferencesGroup(title=_("Sharpness &amp; Noise"),
+                                 description=_("Affects the finest details — zoom in to judge "
+                                               "(mouse wheel, double-click = 100 %)."))
+        self._slider(g, _("Denoise"), "denoise", 0, 1, 0.05, 2)
+        self._slider(g, _("Smooth film grain"), "grain", 0, 1, 0.05, 2)
+        self._slider(g, _("Sharpen"), "sharpen", 0, 3, 0.05, 2)
+        self._slider(g, _("Sharpen radius"), "sharpen_radius", 0.5, 3, 0.1, 1, _("pixels"))
         page.add(g)
         return page
 
@@ -367,7 +370,7 @@ class Window(Adw.ApplicationWindow):
     def _reset_button(self, field):
         """Knopf, der einen einzelnen Wert auf die Voreinstellung zurücksetzt."""
         b = Gtk.Button(icon_name="edit-undo-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"],
-                       tooltip_text="Zurücksetzen", sensitive=False)
+                       tooltip_text=_("Reset"), sensitive=False)
         b.connect("clicked", lambda *_: self._set(field, getattr(self._preset(), field), sync=True))
         self._reset_btns[field] = b
         return b
@@ -412,7 +415,7 @@ class Window(Adw.ApplicationWindow):
         if (field in DETAIL_FIELDS and self.view.zoom_percent() < 60 and self.full is not None
                 and not self._detail_hint_shown):
             self._detail_hint_shown = True
-            self.toast("Diesen Filter sieht man erst hineingezoomt — Doppelklick ins Bild für 100 %")
+            self.toast(_("This filter is only visible when zoomed in — double-click the image for 100 %"))
         self.refresh()
 
     # ---- Bild laden ------------------------------------------------------------
@@ -430,7 +433,7 @@ class Window(Adw.ApplicationWindow):
         def done(res, err):
             self.spinner.set_visible(False)
             if err:
-                self.toast(f"Treppen-Korrektur fehlgeschlagen: {err}")
+                self.toast(_("Staircase correction failed: {err}").format(err=err))
                 res = (rgb, None, 0.0, 0.0)
             self._use_image(rgb, res, dpi, name, processed)
             return False
@@ -446,7 +449,7 @@ class Window(Adw.ApplicationWindow):
         # nur Zuschnitt nicht; Rohscans brauchen die Scanner-Kennlinie, fertige Bilder nicht
         base = replace(self.params, crop=None, scanner_curve=not processed)
         if processed and self.params.scanner_curve:
-            self.toast("Bild ist bereits aufbereitet — Scanner-Kennlinie ausgeschaltet")
+            self.toast(_("Image is already processed — scanner curve turned off"))
         page = Page(rgb, dj if dj is not rgb else None, before, dpi, name, processed, base)
         if self.multipage and self.pages:
             self._store_current()
@@ -497,7 +500,7 @@ class Window(Adw.ApplicationWindow):
             dpi = int(round(im.info.get("dpi", (self.dpi, self.dpi))[0])) or 600
             rgb = np.asarray(im.convert("RGB"))
         except Exception as e:  # noqa: BLE001
-            self.toast(f"Kann {Path(path).name} nicht öffnen: {e}")
+            self.toast(_("Cannot open {name}: {err}").format(name=Path(path).name, err=e))
             return
         # lineare Rohdaten sind sehr dunkel (Median ~80); aufbereitete Bilder nicht
         processed = float(np.median(rgb[::8, ::8])) > 110
@@ -555,7 +558,7 @@ class Window(Adw.ApplicationWindow):
     def _render_done(self, res, err):
         self.spinner.set_visible(False)
         if err:
-            self.toast(f"Fehler in der Bearbeitung: {err}")
+            self.toast(_("Processing error: {err}").format(err=err))
             return False
         prev, size, p, stats, dt, page, thumb = res
         if page != self.cur:                # inzwischen andere Seite gewählt
@@ -591,7 +594,7 @@ class Window(Adw.ApplicationWindow):
         def done(img, err):
             self.spinner.set_visible(False)
             if err:
-                self.toast(f"Fehler in der Bearbeitung: {err}")
+                self.toast(_("Processing error: {err}").format(err=err))
             elif self._last and self._last[0] == p:
                 self.view.deliver_detail(token, to_texture(img), (x, y, w, h, scale))
             return False
@@ -606,11 +609,12 @@ class Window(Adw.ApplicationWindow):
         out = f"{self.view.iw}×{self.view.ih}" if (self.view.iw, self.view.ih) != (w, h) else ""
         self.info.set_text(
             f"{self.source_name} — {w}×{h} px, {self.dpi} dpi ({w / self.dpi * 25.4:.0f}×{h / self.dpi * 25.4:.0f} mm)"
-            + (f" · Ergebnis {out} px ({self.view.iw / self.dpi * 25.4:.0f}×{self.view.ih / self.dpi * 25.4:.0f} mm)"
+            + (" · " + _("Result {size} px ({w}×{h} mm)").format(
+                size=out, w=f"{self.view.iw / self.dpi * 25.4:.0f}", h=f"{self.view.ih / self.dpi * 25.4:.0f}")
                if out and not self.cropping else "")
             + f" · Zoom {V.zoom_label(self.view)} · {getattr(self, '_render_time', 0) * 1000:.0f} ms"
-            + (" · VORHER" if self.before_btn.get_active() else "")
-            + (" · ZUSCHNEIDEN: Rahmen ziehen, Enter übernimmt, Esc bricht ab" if self.cropping else ""))
+            + (" · " + _("BEFORE") if self.before_btn.get_active() else "")
+            + (" · " + _("CROP: drag a frame, Enter applies, Esc cancels") if self.cropping else ""))
 
     # ---- Seiten -------------------------------------------------------------------
     def _page_strip(self):
@@ -621,16 +625,16 @@ class Window(Adw.ApplicationWindow):
         row1, row2 = Gtk.Box(css_classes=["linked"]), Gtk.Box(spacing=4)
         self.strip_btns = {}
         for key, icon, tip, cb in (
-                ("left", "go-previous-symbolic", "Seite nach vorne", lambda *_: self._move_page(-1)),
-                ("right", "go-next-symbolic", "Seite nach hinten", lambda *_: self._move_page(1)),
-                ("delete", "user-trash-symbolic", "Seite entfernen", lambda *_: self._delete_page())):
+                ("left", "go-previous-symbolic", _("Move page forward"), lambda *_: self._move_page(-1)),
+                ("right", "go-next-symbolic", _("Move page back"), lambda *_: self._move_page(1)),
+                ("delete", "user-trash-symbolic", _("Remove page"), lambda *_: self._delete_page())):
             b = Gtk.Button(icon_name=icon, tooltip_text=tip)
             b.connect("clicked", cb)
             self.strip_btns[key] = b
             (row1 if key != "delete" else row2).append(b)
         row2.prepend(row1)
-        allb = Gtk.Button(label="Auf alle Seiten", tooltip_text="Einstellungen dieser Seite auf alle Seiten "
-                                                                 "übertragen (ohne Zuschnitt)")
+        allb = Gtk.Button(label=_("Apply to all pages"),
+                          tooltip_text=_("Apply this page's settings to all pages (except crop)"))
         allb.connect("clicked", lambda *_: self._apply_to_all())
         self.strip_btns["all"] = allb
         tools.append(row2)
@@ -654,14 +658,14 @@ class Window(Adw.ApplicationWindow):
             box.append(pic)
             box.append(Gtk.Label(label=str(i + 1), css_classes=["caption"]))
             b = Gtk.ToggleButton(child=box, css_classes=["flat"], active=i == self.cur,
-                                 tooltip_text=f"Seite {i + 1}: {pg.name}")
+                                 tooltip_text=_("Page {n}: {name}").format(n=i + 1, name=pg.name))
             if group:
                 b.set_group(group)
             group = group or b
             b.connect("toggled", lambda b, i=i: b.get_active() and i != self.cur and self._activate(i))
             self.strip_box.append(b)
             self._thumb_pics.append(pic)
-        add = Gtk.Button(tooltip_text="Weitere Seite scannen", valign=Gtk.Align.CENTER, css_classes=["flat"])
+        add = Gtk.Button(tooltip_text=_("Scan another page"), valign=Gtk.Align.CENTER, css_classes=["flat"])
         add.set_child(Gtk.Image(icon_name="list-add-symbolic", pixel_size=32))
         add.connect("clicked", lambda *_: self._scan_more())
         self.strip_box.append(add)
@@ -694,9 +698,9 @@ class Window(Adw.ApplicationWindow):
             return
         self._store_current()
         removed, idx = self.pages.pop(self.cur), self.cur
-        t = Adw.Toast(title=f"Seite {idx + 1} entfernt", button_label="Rückgängig", timeout=8)
+        t = Adw.Toast(title=_("Page {n} removed").format(n=idx + 1), button_label=_("Undo"), timeout=8)
 
-        def undo(*_):
+        def undo(*_a):
             self._store_current()
             self.pages.insert(idx, removed)
             self._activate(idx, store=False)
@@ -711,7 +715,7 @@ class Window(Adw.ApplicationWindow):
         self._store_current()
         for pg in self.pages:
             pg.params = replace(self.params, crop=pg.params.crop, scanner_curve=not pg.processed)
-        self.toast(f"Einstellungen auf alle {len(self.pages)} Seiten übertragen")
+        self.toast(_("Settings applied to all {n} pages").format(n=len(self.pages)))
         for i, pg in enumerate(self.pages):    # Vorschaubilder der anderen Seiten sind jetzt veraltet
             if i != self.cur:
                 pg.thumb = None
@@ -724,14 +728,16 @@ class Window(Adw.ApplicationWindow):
         self._save_settings()
         self._rebuild_strip()
         if self.multipage:
-            self.toast("Mehrseitig: jeder Scan wird als weitere Seite angehängt")
+            self.toast(_("Multi-page: each scan is appended as another page"))
 
     def new_document(self):
         if self._dirty and self.pages:
-            dlg = Adw.AlertDialog(heading="Neues Dokument?",
-                                  body=f"Das aktuelle Dokument ({len(self.pages)} Seite(n)) ist nicht gespeichert.")
-            dlg.add_response("cancel", "Abbrechen")
-            dlg.add_response("discard", "Verwerfen")
+            dlg = Adw.AlertDialog(heading=_("New document?"),
+                                  body=ngettext("The current document ({n} page) has not been saved.",
+                                                "The current document ({n} pages) has not been saved.",
+                                                len(self.pages)).format(n=len(self.pages)))
+            dlg.add_response("cancel", _("Cancel"))
+            dlg.add_response("discard", _("Discard"))
             dlg.set_response_appearance("discard", Adw.ResponseAppearance.DESTRUCTIVE)
             dlg.connect("response", lambda _d, r: r == "discard" and self._clear_document())
             dlg.present(self)
@@ -757,13 +763,13 @@ class Window(Adw.ApplicationWindow):
             return
         langs = X.tesseract_langs()
         if not langs:
-            self.toast("Texterkennung nicht installiert: sudo apt install tesseract-ocr tesseract-ocr-deu")
+            self.toast(_("Text recognition not installed: sudo apt install tesseract-ocr"))
             return
         self._store_current()
-        lang = self.settings.get("ocr_lang") or ("deu+eng" if {"deu", "eng"} <= set(langs) else langs[0])
+        lang = self.settings.get("ocr_lang") or X.default_ocr_lang(langs)
         page = self.pages[self.cur]
         self.spinner.set_visible(True)
-        self.title.set_subtitle("Texterkennung …")
+        self.title.set_subtitle(_("Recognizing text …"))
 
         def job():
             return X.ocr_text(X.render_page(page), lang, page.dpi)
@@ -776,19 +782,19 @@ class Window(Adw.ApplicationWindow):
                 return False
             view = Gtk.TextView(editable=False, wrap_mode=Gtk.WrapMode.WORD_CHAR, monospace=False,
                                 top_margin=12, bottom_margin=12, left_margin=12, right_margin=12)
-            view.get_buffer().set_text(text.strip() or "(kein Text erkannt)")
+            view.get_buffer().set_text(text.strip() or _("(no text recognized)"))
             sc = Gtk.ScrolledWindow(child=view, vexpand=True)
-            copy = Gtk.Button(label="Kopieren", css_classes=["suggested-action"])
+            copy = Gtk.Button(label=_("Copy"), css_classes=["suggested-action"])
 
-            def do_copy(*_):
+            def do_copy(*_a):
                 self.get_clipboard().set(text)
-                self.toast("Text in die Zwischenablage kopiert")
+                self.toast(_("Text copied to clipboard"))
             copy.connect("clicked", do_copy)
             hb = Adw.HeaderBar()
             hb.pack_end(copy)
             tv = Adw.ToolbarView(content=sc)
             tv.add_top_bar(hb)
-            Adw.Dialog(title=f"Erkannter Text — Seite {self.cur + 1}", child=tv,
+            Adw.Dialog(title=_("Recognized text — page {n}").format(n=self.cur + 1), child=tv,
                        content_width=640, content_height=720).present(self)
             return False
 
@@ -798,15 +804,15 @@ class Window(Adw.ApplicationWindow):
     def _crop_bar(self):
         bar = Gtk.Box(spacing=6, halign=Gtk.Align.CENTER, valign=Gtk.Align.END, margin_bottom=18,
                       css_classes=["toolbar", "osd"], visible=False)
-        self.aspect_dd = Gtk.DropDown.new_from_strings([n for n, _r in ASPECTS])
-        self.aspect_dd.set_tooltip_text("Seitenverhältnis")
+        self.aspect_dd = Gtk.DropDown.new_from_strings([_(n) for n, _r in ASPECTS])
+        self.aspect_dd.set_tooltip_text(_("Aspect ratio"))
         self.aspect_dd.connect("notify::selected", lambda *_: self._apply_aspect())
-        flip = Gtk.Button(icon_name="object-flip-horizontal-symbolic", tooltip_text="Hoch-/Querformat tauschen")
+        flip = Gtk.Button(icon_name="object-flip-horizontal-symbolic", tooltip_text=_("Swap portrait/landscape"))
         flip.connect("clicked", lambda *_: self._apply_aspect(flip=True))
-        full = Gtk.Button(label="Ganzes Bild", tooltip_text="Rahmen auf das ganze Bild setzen")
+        full = Gtk.Button(label=_("Whole image"), tooltip_text=_("Set frame to the whole image"))
         full.connect("clicked", lambda *_: (self.view.begin_crop(None), self._apply_aspect()))
-        cancel = Gtk.Button(label="Abbrechen", action_name="win.crop-cancel")
-        ok = Gtk.Button(label="Übernehmen", action_name="win.crop-apply", css_classes=["suggested-action"])
+        cancel = Gtk.Button(label=_("Cancel"), action_name="win.crop-cancel")
+        ok = Gtk.Button(label=_("Apply"), action_name="win.crop-apply", css_classes=["suggested-action"])
         for w in (self.aspect_dd, flip, full, cancel, ok):
             bar.append(w)
         self._portrait = None
@@ -885,11 +891,11 @@ class Window(Adw.ApplicationWindow):
         self.lookup_action("scan-mode").set_state(GLib.Variant("s", "auto" if auto else "manual"))
         self.settings["scan_mode"] = "auto" if auto else "manual"
         self._save_settings()
-        self.scan_btn.set_label("Automatisch" if auto else "Scannen")
-        self.scan_btn.set_tooltip_text("Scan startet, sobald ein Foto eingelegt ist — Klick scannt sofort"
-                                       if auto else "Jetzt scannen")
-        self.status.set_description("Foto einlegen — der Scan startet automatisch.\nOder ein Bild öffnen."
-                                    if auto else "Foto einlegen und „Scannen“ drücken\noder ein Bild öffnen.")
+        self.scan_btn.set_label(_("Automatic") if auto else _("Scan"))
+        self.scan_btn.set_tooltip_text(_("Scanning starts as soon as a photo is inserted — click to scan now")
+                                       if auto else _("Scan now"))
+        self.status.set_description(_("Insert a photo — scanning starts automatically.\nOr open an image.")
+                                    if auto else _("Insert a photo and press “Scan”\nor open an image."))
         self.watcher.set_armed(auto)
         if not auto:
             self.title.set_subtitle("")
@@ -927,7 +933,7 @@ class Window(Adw.ApplicationWindow):
                 r = subprocess.run(base, capture_output=True, text=True)
             try:
                 if r.returncode:
-                    raise RuntimeError(r.stderr.strip() or f"scanimage Rückgabewert {r.returncode}")
+                    raise RuntimeError(r.stderr.strip() or _("scanimage exit code {code}").format(code=r.returncode))
                 return np.asarray(Image.open(out).convert("RGB")), dpi
             finally:
                 out.unlink(missing_ok=True)
@@ -941,17 +947,18 @@ class Window(Adw.ApplicationWindow):
         if err:
             msg = str(err)
             if "no more documents" in msg.lower() or "Document feeder out of documents" in msg:
-                msg = "Kein Blatt eingelegt."
+                msg = _("No sheet inserted.")
             elif "no SANE devices" in msg or "Invalid argument" in msg:
-                msg = "Scanner nicht gefunden — angeschlossen und nicht an die VM durchgereicht?"
+                msg = _("Scanner not found — is it connected and not passed through to a VM?")
             self.stack.set_visible_child_name("image" if self.full is not None else "empty")
-            self.toast(f"Scan fehlgeschlagen: {msg}")
+            self.toast(_("Scan failed: {err}").format(err=msg))
             return False
         rgb, dpi = res
         self.set_image(rgb, dpi, time.strftime("scan_%Y-%m-%d_%H%M%S"))
         if self._previous:
             prev = self._previous
-            t = Adw.Toast(title=f"„{prev['name']}“ war nicht gespeichert", button_label="Zurückholen", timeout=10)
+            t = Adw.Toast(title=_("“{name}” was not saved").format(name=prev["name"]),
+                          button_label=_("Restore"), timeout=10)
             t.connect("button-clicked", lambda *_: self._restore_state(prev))
             self.toasts.add_toast(t)
         self._dirty = True               # frischer Scan liegt nur im Speicher
@@ -959,8 +966,8 @@ class Window(Adw.ApplicationWindow):
 
     # ---- Speichern -------------------------------------------------------------
     def open_dialog(self):
-        d = Gtk.FileDialog(title="Bild öffnen")
-        f = Gtk.FileFilter(name="Bilder")
+        d = Gtk.FileDialog(title=_("Open image"))
+        f = Gtk.FileFilter(name=_("Images"))
         for m in ("image/png", "image/jpeg", "image/tiff", "image/x-portable-anymap"):
             f.add_mime_type(m)
         store = Gio.ListStore.new(Gtk.FileFilter)
@@ -980,51 +987,52 @@ class Window(Adw.ApplicationWindow):
             return
         self._store_current()
         if raw:
-            self._file_dialog("Rohscan speichern", f"{self.source_name}_roh.png",
+            self._file_dialog(_("Save raw scan"), self.source_name + _("_raw") + ".png",
                               lambda path: self._export(path, "raw", [self.pages[self.cur]], None, 0))
             return
         n = len(self.pages)
         langs = X.tesseract_langs()
         group = Adw.PreferencesGroup()
-        fmt_row = Adw.ComboRow(title="Format", model=Gtk.StringList.new([f[1] for f in X.FORMATS]))
+        fmt_row = Adw.ComboRow(title=_("Format"), model=Gtk.StringList.new([_(f[1]) for f in X.FORMATS]))
         keys = [f[0] for f in X.FORMATS]
         last = self.settings.get("format_multi" if n > 1 else "format", "pdf" if n > 1 else "jpg")
         fmt_row.set_selected(keys.index(last) if last in keys else 0)
         group.add(fmt_row)
-        pages_row = Adw.ComboRow(title="Seiten", model=Gtk.StringList.new([f"Alle {n} Seiten", "Nur aktuelle Seite"]),
+        pages_row = Adw.ComboRow(title=_("Pages"), model=Gtk.StringList.new([_("All {n} pages").format(n=n),
+                                                                              _("Current page only")]),
                                  visible=n > 1)
         group.add(pages_row)
         lang_codes = langs or []
-        lang_row = Adw.ComboRow(title="Sprache der Texterkennung")
+        lang_row = Adw.ComboRow(title=_("Text recognition language"))
         if langs:
             combos = (["deu+eng"] if {"deu", "eng"} <= set(langs) else []) + langs
             lang_codes = combos
             lang_row.set_model(Gtk.StringList.new(
-                ["Deutsch + Englisch" if c == "deu+eng" else X.LANG_NAMES.get(c, c) for c in combos]))
-            prev_lang = self.settings.get("ocr_lang", "deu+eng" if "deu+eng" in combos else combos[0])
+                [_("German + English") if c == "deu+eng" else _(X.LANG_NAMES.get(c, c)) for c in combos]))
+            prev_lang = self.settings.get("ocr_lang", X.default_ocr_lang(combos))
             lang_row.set_selected(combos.index(prev_lang) if prev_lang in combos else 0)
         else:
             lang_row.set_model(Gtk.StringList.new(["—"]))
-            lang_row.set_subtitle("Texterkennung nicht installiert: sudo apt install tesseract-ocr tesseract-ocr-deu")
+            lang_row.set_subtitle(_("Text recognition not installed: sudo apt install tesseract-ocr"))
             lang_row.set_sensitive(False)
         group.add(lang_row)
         quality = Adw.SpinRow.new_with_range(50, 100, 1)
-        quality.set_title("JPEG-Qualität")
+        quality.set_title(_("JPEG quality"))
         quality.set_value(self.settings.get("quality", 90))
         group.add(quality)
 
-        def sync(*_):
+        def sync(*_a):
             key = keys[fmt_row.get_selected()]
             needs_ocr = X.FORMAT_BY_KEY[key][3]
             lang_row.set_visible(needs_ocr)
             quality.set_visible(key in ("pdf", "pdf-plain", "jpg"))
-            fmt_row.set_subtitle("Texterkennung fehlt — bitte installieren" if needs_ocr and not langs else "")
+            fmt_row.set_subtitle(_("Text recognition missing — please install it") if needs_ocr and not langs else "")
         fmt_row.connect("notify::selected", sync)
         sync()
 
-        dlg = Adw.AlertDialog(heading="Speichern", extra_child=group)
-        dlg.add_response("cancel", "Abbrechen")
-        dlg.add_response("save", "Speichern …")
+        dlg = Adw.AlertDialog(heading=_("Save"), extra_child=group)
+        dlg.add_response("cancel", _("Cancel"))
+        dlg.add_response("save", _("Save …"))
         dlg.set_response_appearance("save", Adw.ResponseAppearance.SUGGESTED)
         dlg.set_default_response("save")
 
@@ -1033,7 +1041,7 @@ class Window(Adw.ApplicationWindow):
                 return
             key = keys[fmt_row.get_selected()]
             if X.FORMAT_BY_KEY[key][3] and not langs:
-                self.toast("Für dieses Format fehlt die Texterkennung: sudo apt install tesseract-ocr tesseract-ocr-deu")
+                self.toast(_("This format needs text recognition: sudo apt install tesseract-ocr"))
                 return
             pages = self.pages if pages_row.get_selected() == 0 else [self.pages[self.cur]]
             lang = lang_codes[lang_row.get_selected()] if langs else None
@@ -1043,7 +1051,7 @@ class Window(Adw.ApplicationWindow):
                 self.settings["ocr_lang"] = lang
             self._save_settings()
             name = self.pages[0].name if len(pages) > 1 else self.source_name
-            self._file_dialog("Speichern", name + X.FORMAT_BY_KEY[key][2],
+            self._file_dialog(_("Save"), name + X.FORMAT_BY_KEY[key][2],
                               lambda path: self._export(path, key, pages, lang, q))
         dlg.connect("response", on_response)
         dlg.present(self)
@@ -1074,7 +1082,7 @@ class Window(Adw.ApplicationWindow):
                 pg = pages[0]
                 Image.fromarray(pg.src).save(path.with_suffix(".png"), dpi=(pg.dpi, pg.dpi))
                 return [path.with_suffix(".png")]
-            return X.export(pages, path, key, lang=lang or "deu", quality=quality, progress=status)
+            return X.export(pages, path, key, lang=lang or X.default_ocr_lang(X.tesseract_langs() or ["eng"]), quality=quality, progress=status)
 
         self.worker.submit(job, self._save_done)
 
@@ -1095,9 +1103,11 @@ class Window(Adw.ApplicationWindow):
         self.save_btn.set_sensitive(True)
         self.title.set_subtitle("")
         if err:
-            self.toast(f"Speichern fehlgeschlagen: {err}")
+            self.toast(_("Saving failed: {err}").format(err=err))
         else:
-            self.toast(f"Gespeichert: {res[0].name}" + (f" und {len(res) - 1} weitere" if len(res) > 1 else ""))
+            more = len(res) - 1
+            self.toast(_("Saved: {name}").format(name=res[0].name)
+                       + (" " + ngettext("and {n} more", "and {n} more", more).format(n=more) if more else ""))
         self.refresh()
         return False
 
@@ -1107,7 +1117,7 @@ class Window(Adw.ApplicationWindow):
 
     def about(self):
         Adw.AboutDialog(application_name="ePhoto Scan", version="1.0", developer_name="bosstschopp-star",
-                        comments="Scannen und Nachbearbeiten mit dem Plustek ePhoto Z300",
+                        comments=_("Scanning and editing with the Plustek ePhoto Z300"),
                         application_icon="scanner").present(self)
 
     def _load_settings(self):

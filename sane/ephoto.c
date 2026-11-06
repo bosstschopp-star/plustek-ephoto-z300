@@ -441,8 +441,22 @@ static SANE_Option_Descriptor opts[OPT_COUNT];
 static SANE_String_Const mode_list[] = { SANE_VALUE_SCAN_MODE_COLOR, NULL };
 static const SANE_Int res_list[] = { 2, 300, 600 };
 
+/* Sprache der Optionstexte wie gettext: LANGUAGE, LC_ALL, LC_MESSAGES, LANG.
+ * Deutsch bei "de...", sonst Englisch. */
+static int lang_is_german(void)
+{
+  static const char *vars[] = { "LANGUAGE", "LC_ALL", "LC_MESSAGES", "LANG" };
+  for (size_t i = 0; i < sizeof vars / sizeof vars[0]; i++) {
+    const char *v = getenv(vars[i]);
+    if (v && *v) return strncmp(v, "de", 2) == 0;
+  }
+  return 0;
+}
+
 static void init_options(void)
 {
+  int de = lang_is_german();
+
   opts[OPT_NUM].name = SANE_NAME_NUM_OPTIONS;
   opts[OPT_NUM].title = SANE_TITLE_NUM_OPTIONS;
   opts[OPT_NUM].desc = SANE_DESC_NUM_OPTIONS;
@@ -471,9 +485,11 @@ static void init_options(void)
 
   /* desc muss gesetzt sein, sonst stuerzt scanimage --help ab */
   opts[OPT_ENHANCE].name = "enhance";
-  opts[OPT_ENHANCE].title = "Bildaufbereitung";
-  opts[OPT_ENHANCE].desc = "Tonwertkurve und leichtes Nachschaerfen anwenden. "
-                           "Aus: lineare Sensordaten, z. B. fuer eigene Nachbearbeitung.";
+  opts[OPT_ENHANCE].title = de ? "Bildaufbereitung" : "Image enhancement";
+  opts[OPT_ENHANCE].desc = de ? "Tonwertkurve und leichtes Nachschaerfen anwenden. "
+                                "Aus: lineare Sensordaten, z. B. fuer eigene Nachbearbeitung."
+                              : "Apply a tone curve and light sharpening. "
+                                "Off: linear sensor data, e.g. for your own post-processing.";
   opts[OPT_ENHANCE].type = SANE_TYPE_BOOL;
   opts[OPT_ENHANCE].size = sizeof(SANE_Word);
   opts[OPT_ENHANCE].cap = SANE_CAP_SOFT_SELECT | SANE_CAP_SOFT_DETECT;
