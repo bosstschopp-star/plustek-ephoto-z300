@@ -134,6 +134,9 @@ class Window(Adw.ApplicationWindow):
         multi.append(_("Append new scans as additional page"), "win.multipage")
         multi.append(_("Start new document"), "win.new-doc")
         scan_menu.append_section(_("Multi-page documents"), multi)
+        length = Gio.Menu()
+        length.append(_("Keep full scan length (crop by hand)"), "win.full-length")
+        scan_menu.append_section(_("Scan length"), length)
         self.scan_btn = Adw.SplitButton(label=_("Scan"), menu_model=scan_menu,
                                         dropdown_tooltip=_("Scan on button press or automatically"))
         self.scan_btn.add_css_class("suggested-action")
@@ -146,6 +149,10 @@ class Window(Adw.ApplicationWindow):
         mp = Gio.SimpleAction.new_stateful("multipage", None, GLib.Variant("b", self.multipage))
         mp.connect("change-state", self._on_multipage)
         self.add_action(mp)
+        self.full_length = bool(self.settings.get("full_length", False))
+        fl = Gio.SimpleAction.new_stateful("full-length", None, GLib.Variant("b", self.full_length))
+        fl.connect("change-state", self._on_full_length)
+        self.add_action(fl)
         self.title = Adw.WindowTitle(title="ePhoto Scan")
         header.set_title_widget(self.title)
         self.res_dd = Gtk.DropDown.new_from_strings(["300 dpi", "600 dpi"])
@@ -721,6 +728,12 @@ class Window(Adw.ApplicationWindow):
                 pg.thumb = None
         self._rebuild_strip()
 
+    def _on_full_length(self, action, value):
+        action.set_state(value)
+        self.full_length = value.get_boolean()
+        self.settings["full_length"] = self.full_length
+        self._save_settings()
+
     def _on_multipage(self, action, value):
         action.set_state(value)
         self.multipage = value.get_boolean()
@@ -925,10 +938,17 @@ class Window(Adw.ApplicationWindow):
         # bisheriges Dokument merken, falls es ersetzt wird und noch nicht gespeichert war
         self._previous = self._snapshot_state() if (self._dirty and not self.multipage) else None
 
+        full_length = self.full_length
+
         def job():
             out = Path(tempfile.mkstemp(suffix=".pnm", prefix="ephoto-")[1])
             base = ["scanimage", "-d", DEVICE, "--resolution", str(dpi), "--format=pnm", "-o", str(out)]
-            r = subprocess.run(base[:5] + ["--enhance=no"] + base[5:], capture_output=True, text=True)
+            opts = ["--enhance=no"] + (["--trim=no"] if full_length else [])
+            r = subprocess.run(base[:5] + opts + base[5:], capture_output=True, text=True)
+            if r.returncode and full_length and "trim" in r.stderr:
+                # älteres Backend ohne die Option: getrimmt scannen
+                GLib.idle_add(lambda: self.toast(_("Driver does not support full scan length — please reinstall it.")) and False)
+                r = subprocess.run(base[:5] + ["--enhance=no"] + base[5:], capture_output=True, text=True)
             if r.returncode and "enhance" in r.stderr:      # älteres Backend ohne die Option: liefert linear
                 r = subprocess.run(base, capture_output=True, text=True)
             try:

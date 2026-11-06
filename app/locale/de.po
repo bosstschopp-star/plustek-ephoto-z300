@@ -39,6 +39,15 @@ msgstr "Neues Dokument beginnen"
 msgid "Multi-page documents"
 msgstr "Mehrseitige Dokumente"
 
+msgid "Scan length"
+msgstr "Scanlänge"
+
+msgid "Keep full scan length (crop by hand)"
+msgstr "Volle Scanlänge behalten (von Hand zuschneiden)"
+
+msgid "Driver does not support full scan length — please reinstall it."
+msgstr "Der Treiber kennt keine volle Scanlänge — bitte neu installieren."
+
 msgid "Resolution"
 msgstr "Auflösung"
 

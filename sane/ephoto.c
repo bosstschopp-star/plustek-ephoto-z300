@@ -57,6 +57,7 @@ static SANE_Byte *image;            /* fertiges RGB-Bild */
 static int img_lines, img_read;
 static SANE_Bool scanning;
 static SANE_Bool enhance = SANE_TRUE;   /* Tonwertkurve + Nachschaerfen */
+static SANE_Bool trim = SANE_TRUE;      /* Vor-/Nachlauf abschneiden */
 
 
 static const SANE_Device dev_desc = {
@@ -446,8 +447,8 @@ static SANE_Byte *postprocess(unsigned char *raw, size_t len, int *out_lines)
    * hat keine helle Papierkante, dann fielen dunkle Bildzeilen mit weg.
    * Stattdessen gegen den Scannerhintergrund (Vor-/Nachlauf, roh ~2,5 bei
    * Zeilenstreuung ~0,02; dunkelste Bildzeilen gemessen 3,1). */
-  int y0 = edge_from(rowmean, lines, +1, mode->dpi);
-  int y1 = edge_from(rowmean, lines, -1, mode->dpi);
+  int y0 = trim ? edge_from(rowmean, lines, +1, mode->dpi) : 0;
+  int y1 = trim ? edge_from(rowmean, lines, -1, mode->dpi) : lines - 1;
   free(rowmean);
 
   y0 += mode->ch_off; y1 -= mode->ch_off;
@@ -476,7 +477,7 @@ static SANE_Byte *postprocess(unsigned char *raw, size_t len, int *out_lines)
 
 /* ---- SANE-Schnittstelle ------------------------------------------------ */
 
-enum { OPT_NUM = 0, OPT_MODE, OPT_RES, OPT_ENHANCE, OPT_COUNT };
+enum { OPT_NUM = 0, OPT_MODE, OPT_RES, OPT_ENHANCE, OPT_TRIM, OPT_COUNT };
 static SANE_Option_Descriptor opts[OPT_COUNT];
 static SANE_String_Const mode_list[] = { SANE_VALUE_SCAN_MODE_COLOR, NULL };
 static const SANE_Int res_list[] = { 2, 300, 600 };
@@ -533,6 +534,16 @@ static void init_options(void)
   opts[OPT_ENHANCE].type = SANE_TYPE_BOOL;
   opts[OPT_ENHANCE].size = sizeof(SANE_Word);
   opts[OPT_ENHANCE].cap = SANE_CAP_SOFT_SELECT | SANE_CAP_SOFT_DETECT;
+
+  opts[OPT_TRIM].name = "trim";
+  opts[OPT_TRIM].title = de ? "Laenge zuschneiden" : "Trim length";
+  opts[OPT_TRIM].desc = de ? "Dunklen Vor- und Nachlauf vor und hinter dem Blatt abschneiden. "
+                             "Aus: volle Scanlaenge, z. B. zum Zuschneiden von Hand."
+                           : "Cut off the dark lead-in and run-out before and after the sheet. "
+                             "Off: full scan length, e.g. for cropping by hand.";
+  opts[OPT_TRIM].type = SANE_TYPE_BOOL;
+  opts[OPT_TRIM].size = sizeof(SANE_Word);
+  opts[OPT_TRIM].cap = SANE_CAP_SOFT_SELECT | SANE_CAP_SOFT_DETECT;
 }
 
 SANE_Status sane_init(SANE_Int *version, SANE_Auth_Callback cb)
@@ -597,6 +608,7 @@ SANE_Status sane_control_option(SANE_Handle h, SANE_Int n, SANE_Action a,
     case OPT_MODE: strcpy((char *)v, SANE_VALUE_SCAN_MODE_COLOR); break;
     case OPT_RES: *(SANE_Word *)v = mode->dpi; break;
     case OPT_ENHANCE: *(SANE_Word *)v = enhance; break;
+    case OPT_TRIM: *(SANE_Word *)v = trim; break;
     }
     return SANE_STATUS_GOOD;
   }
@@ -609,6 +621,8 @@ SANE_Status sane_control_option(SANE_Handle h, SANE_Int n, SANE_Action a,
     }
     else if (n == OPT_ENHANCE)
       enhance = *(SANE_Word *)v ? SANE_TRUE : SANE_FALSE;
+    else if (n == OPT_TRIM)
+      trim = *(SANE_Word *)v ? SANE_TRUE : SANE_FALSE;
     return SANE_STATUS_GOOD;
   }
   return SANE_STATUS_UNSUPPORTED;
