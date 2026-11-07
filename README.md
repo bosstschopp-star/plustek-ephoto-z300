@@ -52,6 +52,16 @@ bash app/install_app.sh         # Python venv + menu entry "ePhoto Scan"
 
 Tesseract is only needed for OCR (searchable PDF, text export).
 
+### Troubleshooting
+
+```sh
+EPHOTO_DEBUG=1 scanimage -d ephoto:ephoto:z300 --resolution 300 --format=png -o scan.png
+```
+
+logs every scan step with timestamps to stderr: when the paper sensor clears,
+when reading stops, whether the sheet is ejected and whether the motor stopped
+by itself. `EPHOTO_DUMP_RAW=raw.ppm` additionally saves the untrimmed raw data.
+
 ### ePhoto Scan — controls
 
 Mouse wheel zooms around the pointer, drag to pan, double-click toggles fit /

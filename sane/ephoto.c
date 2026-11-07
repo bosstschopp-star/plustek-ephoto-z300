@@ -13,6 +13,7 @@
  *
  * Bekannte Grenze: 300 dpi Farbe, A4.
  */
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -58,6 +59,34 @@ static int img_lines, img_read;
 static SANE_Bool scanning;
 static SANE_Bool enhance = SANE_TRUE;   /* Tonwertkurve + Nachschaerfen */
 static SANE_Bool trim = SANE_TRUE;      /* Vor-/Nachlauf abschneiden */
+
+/* Diagnose: EPHOTO_DEBUG=1 schreibt den Ablauf jedes Scans mit Zeitstempel
+ * nach stderr (Papiersensor, Lesestopp, Auswurf, Motorstillstand). */
+static int dbg_on = -1;
+static struct timespec dbg_t0;
+
+static void dbg_start(void)
+{
+  clock_gettime(CLOCK_MONOTONIC, &dbg_t0);
+}
+
+static void dbg(const char *fmt, ...)
+{
+  if (dbg_on < 0) {
+    const char *v = getenv("EPHOTO_DEBUG");
+    dbg_on = v && *v && strcmp(v, "0") != 0;
+  }
+  if (!dbg_on) return;
+  struct timespec t;
+  clock_gettime(CLOCK_MONOTONIC, &t);
+  double ms = (t.tv_sec - dbg_t0.tv_sec) * 1e3 + (t.tv_nsec - dbg_t0.tv_nsec) / 1e6;
+  fprintf(stderr, "[ephoto %7.0f ms] ", ms);
+  va_list ap;
+  va_start(ap, fmt);
+  vfprintf(stderr, fmt, ap);
+  va_end(ap);
+  fputc('\n', stderr);
+}
 
 
 static const SANE_Device dev_desc = {
@@ -197,11 +226,15 @@ static void settle(double max_seconds)
   int waited = 0;
   while (waited < (int)(max_seconds * 1000)) {
     int st = read_reg(REG_STATUS);
-    if (st < 0 || !(st & MOTORENB)) return;
+    if (st < 0 || !(st & MOTORENB)) {
+      dbg("motor stopped by itself after %d ms (status 0x%02x)", waited, st);
+      return;
+    }
     struct timespec ts = { 0, step_ms * 1000000L };
     nanosleep(&ts, NULL);
     waited += step_ms;
   }
+  dbg("motor still running after %.1f s, switching it off", max_seconds);
   unsigned char off[2] = { REG_MOTOR, 0x00 };
   ctrl_out(V_WREG, 0, off, 2);
   unsigned char idle[2] = { REG_MOTOR, 0x78 };   /* Ruhezustand wie im Init */
@@ -212,6 +245,8 @@ static void settle(double max_seconds)
 
 static int run_sequence(unsigned char **raw, size_t *raw_len)
 {
+  dbg_start();
+  dbg("scan start: %d dpi, status 0x%02x", mode->dpi, read_reg(REG_STATUS));
   unsigned char *tables[DL_COUNT];
   size_t tsize[DL_COUNT];
   for (int i = 0; i < DL_COUNT; i++) { tables[i] = NULL; tsize[i] = 0; }
@@ -271,12 +306,14 @@ static int run_sequence(unsigned char **raw, size_t *raw_len)
    * entfaellt.  Der Ausstieg erfolgt zwischen zwei Bloecken; jeder Block hat
    * sein eigenes BUFSET, es bleibt also keine Transaktion offen. */
   const int trail_lines = SENSOR_TO_SCANLINE_300 * mode->dpi / 300;
-  int paper_gone_at = -1, stop_now = 0;
+  int paper_gone_at = -1, stop_now = 0, skipped = 0;
+  dbg("sequence: %zu bytes = %zu lines max, stop %d lines after the sensor clears",
+      total, total / mode->stride, trail_lines);
 
   int failed = 0;
   for (int i = 0; i <= last_read && !failed; i++) {
     const ep_step *s = &mode->seq[i];
-    if (s->op == OP_R && stop_now) continue;
+    if (s->op == OP_R && stop_now) { skipped++; continue; }
     switch (s->op) {
     case OP_W:
       if (ctrl_out(V_WREG, 0, ep_payload + s->off, s->len) != s->len) failed = 1;
@@ -312,9 +349,17 @@ static int run_sequence(unsigned char **raw, size_t *raw_len)
         int lines = (int)(have / mode->stride);
         if (paper_gone_at < 0) {
           int st = read_reg(REG_STATUS);
-          if (st >= 0 && (st & DOCSENSOR)) paper_gone_at = lines;
-        } else if (lines - paper_gone_at >= trail_lines) {
-          stop_now = 1;
+          dbg("block %d: %d lines, status 0x%02x", i, lines, st);
+          if (st >= 0 && (st & DOCSENSOR)) {
+            paper_gone_at = lines;
+            dbg("paper sensor clear at line %d", lines);
+          }
+        } else {
+          dbg("block %d: %d lines", i, lines);
+          if (lines - paper_gone_at >= trail_lines) {
+            stop_now = 1;
+            dbg("stop reading at line %d", lines);
+          }
         }
       }
       break;
@@ -334,6 +379,10 @@ static int run_sequence(unsigned char **raw, size_t *raw_len)
   {
     int st = read_reg(REG_STATUS);
     paper_left = (st >= 0) && !(st & DOCSENSOR);
+    dbg("read %zu bytes = %zu lines, %d blocks skipped%s; status 0x%02x, "
+        "paper %s -> eject %s", have, have / mode->stride, skipped,
+        failed ? ", USB error" : "", st,
+        paper_left ? "still at the sensor" : "gone", paper_left ? "on" : "off");
   }
   for (int i = last_read + 1; i < mode->seq_len; i++) {
     const ep_step *s = &mode->seq[i];
@@ -354,6 +403,7 @@ static int run_sequence(unsigned char **raw, size_t *raw_len)
   }
 
   settle(6.0);
+  dbg("scan done, status 0x%02x", read_reg(REG_STATUS));
 
   for (int i = 0; i < DL_COUNT; i++) free(tables[i]);
   if (failed && have == 0) { free(buf); return -1; }
@@ -454,6 +504,7 @@ static SANE_Byte *postprocess(unsigned char *raw, size_t len, int *out_lines)
   int y0 = trim ? edge_from(rowmean, lines, +1, mode->dpi) : 0;
   int y1 = trim ? edge_from(rowmean, lines, -1, mode->dpi) : lines - 1;
   free(rowmean);
+  dbg("trim %s: rows %d..%d of %d", trim ? "on" : "off", y0, y1, lines);
 
   y0 += mode->ch_off; y1 -= mode->ch_off;
   if (y1 <= y0) return NULL;
